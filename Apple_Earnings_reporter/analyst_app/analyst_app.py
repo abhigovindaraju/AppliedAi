@@ -3,11 +3,16 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai import types
 from PyPDF2 import PdfReader
+from token_tracker import tracker
+from resource_monitor import monitor_resources, profile_memory
 
 load_dotenv()
 
 # Update PDF directory to current folder
 PDF_DIR = os.path.dirname(__file__)
+
+# Ensure logs directory exists
+os.makedirs(os.path.join(PDF_DIR, "logs"), exist_ok=True)
 PDF_FILES = [
     os.path.join(PDF_DIR, f)
     for f in os.listdir(PDF_DIR)

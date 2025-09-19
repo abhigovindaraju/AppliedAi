@@ -1,13 +1,35 @@
 # Apple Earnings Report Analyst
 
-An AI-powered application that analyzes Apple's earnings reports and answers questions about financial performance. The analyst uses Google's Gemini AI to provide detailed, accurate responses based on the available quarterly reports.
+An AI-powered application that analyzes Apple's earnings reports using Google's Gemini AI to provide intelligent insights and answer questions about financial performance.
 
-## Setup
+## System Requirements
 
-1. Clone the repository
-2. Create a virtual environment:
-   ```bash
-   python3 -m venv venv
+### Hardware Requirements
+- **Processor:** 64-bit processor (Apple Silicon or Intel)
+- **RAM:** Minimum 4GB, Recommended 8GB+
+- **Storage:** 1GB free space for application and dependencies
+- **Internet:** Stable broadband connection (required for API calls)
+
+### Software Requirements
+- **Operating System:**
+  - macOS 10.15 or later
+  - Linux (Ubuntu 18.04+, Debian 10+)
+  - Windows 10/11 with WSL2
+- **Python:** Version 3.9 or higher
+- **Package Manager:** pip (usually comes with Python)
+- **Virtual Environment:** venv or conda (recommended)
+
+### Required Python Packages
+```
+google-generativeai==2.5.0
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+tiktoken==0.5.1
+psutil==5.9.5
+memory-profiler==0.61.0
+```
+
+## Setup and Installation
    source venv/bin/activate  # On Windows: .\venv\Scripts\activate
    ```
 3. Install requirements:
@@ -100,6 +122,128 @@ An AI-powered application that analyzes Apple's earnings reports and answers que
 
 3. **Focus on Financial Metrics**
    - Stick to financial and operational metrics
+   - Reference specific financial indicators
+
+## Technical Architecture
+
+### API Integration
+
+1. **Gemini API Configuration**
+   ```python
+   import google.generativeai as genai
+   genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+   model = genai.GenerativeModel("gemini-2.5-flash")
+   ```
+
+2. **Model Details**
+   - Uses Gemini 2.5 Flash model
+   - Optimized for fast response times
+   - Handles context-aware analysis
+
+3. **API Call Flow**
+   ```python
+   # Generate response with context
+   response = model.generate_content(
+       f"Context: {pdf_content}\nQuestion: {user_question}"
+   )
+   ```
+
+### Resource Monitoring
+
+1. **Token Usage Tracking**
+   ```python
+   from token_tracker import tracker
+   
+   # Count tokens and log usage
+   tokens = tracker.count_tokens(text)
+   stats = tracker.get_usage_stats()
+   ```
+
+2. **System Resource Monitoring**
+   ```python
+   from resource_monitor import monitor_resources
+   
+   @monitor_resources
+   def analyze_report():
+       # Analysis code
+       pass
+   ```
+
+### Performance Logging
+
+The application maintains detailed logs in the `logs` directory:
+
+1. **Token Usage** (`logs/token_usage.log`)
+   - Total tokens consumed
+   - Number of API calls
+   - Average tokens per request
+   - Token usage rate
+
+2. **Resource Usage** (`logs/resource_usage.log`)
+   - CPU utilization
+   - Memory consumption
+   - Disk usage
+   - Process statistics
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Authentication**
+   - Ensure `.env` file exists and contains valid API key
+   - Check for proper environment variable loading
+   - Verify API key permissions
+
+2. **Resource Issues**
+   - Monitor system resources in logs
+   - Check available memory
+   - Review token usage patterns
+
+3. **Performance**
+   - Check token usage logs
+   - Monitor system resource usage
+   - Review API response times
+
+### Error Resolution
+
+1. **API Errors**
+   - Verify network connection
+   - Check API rate limits
+   - Review error messages in logs
+
+2. **PDF Processing**
+   - Ensure PDF files are readable
+   - Check file permissions
+   - Verify PDF format compatibility
+
+3. **Resource Constraints**
+   - Monitor memory usage
+   - Check disk space
+   - Review CPU utilization
+
+## Advanced Features
+
+1. **Smart Number Formatting**
+   ```python
+   def format_number(number_str):
+       """Convert numbers to readable format (B/M)"""
+       number = float(number_str.replace(',', ''))
+       if abs(number) >= 1_000_000_000:
+           return f"{number/1_000_000_000:.2f}B"
+       elif abs(number) >= 1_000_000:
+           return f"{number/1_000_000:.2f}M"
+       return f"{number:,.2f}"
+   ```
+
+2. **Context Awareness**
+   - Tracks available quarters
+   - Maintains historical context
+   - Provides relevant comparisons
+
+3. **Resource Optimization**
+   - Efficient token usage
+   - Memory management
+   - Performance monitoring
    - Ask about trends in the available data
 
 ## Limitations
