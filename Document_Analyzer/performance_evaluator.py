@@ -228,10 +228,15 @@ class PerformanceEvaluator:
         for query in self.example_queries:
             queries_by_complexity[query["complexity"]].append(query)
         
-        # Save detailed CSV
-        csv_file = f"evaluation_results_{timestamp}.csv"
-        df.to_csv(csv_file, index=False)
-        print(f"\nSaved detailed results to: {csv_file}")
+        # Ensure Logs directory exists
+        logs_dir = "Logs"
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        # Save detailed CSV in Logs directory
+        csv_filename = f"evaluation_results_{timestamp}.csv"
+        csv_path = os.path.join(logs_dir, csv_filename)
+        df.to_csv(csv_path, index=False)
+        print(f"\nSaved detailed results to: {csv_path}")
         
         # Save summary report
         summary = {
@@ -259,19 +264,27 @@ class PerformanceEvaluator:
         # Convert all values to native Python types
         summary = {k: self._convert_to_serializable(v) for k, v in summary.items()}
         
-        # Save JSON summary
-        summary_file = f"evaluation_summary_{timestamp}.json"
-        with open(summary_file, "w") as f:
+        # Ensure Logs directory exists
+        logs_dir = "Logs"
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        # Save JSON summary in Logs directory
+        summary_filename = f"evaluation_summary_{timestamp}.json"
+        summary_path = os.path.join(logs_dir, summary_filename)
+        with open(summary_path, "w") as f:
             json.dump(summary, f, indent=2)
             
         # Create symlink to latest summary
-        latest_link = "evaluation_summary_latest.json"
-        if os.path.exists(latest_link):
-            os.remove(latest_link)
-        os.symlink(summary_file, latest_link)
+        latest_link = os.path.join(logs_dir, "evaluation_summary_latest.json")
+        try:
+            if os.path.exists(latest_link) or os.path.islink(latest_link):
+                os.unlink(latest_link)
+            os.symlink(summary_filename, latest_link)
+        except Exception as e:
+            print(f"Warning: Could not create symlink: {e}")
         
-        print(f"Saved summary report to: {summary_file}")
-        print(f"Created symlink to latest results: {latest_link}")
+        print(f"Saved summary report to: {summary_path}")
+        print(f"Latest results link: {latest_link}")
     
     def _get_best_config(self, df: pd.DataFrame, metric: str, minimize: bool = True) -> Dict[str, Any]:
         """Get the best configuration for a given metric"""

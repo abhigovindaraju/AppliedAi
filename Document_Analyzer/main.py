@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import PyPDF2
 import numpy as np
 from typing import List, Dict, Any
@@ -168,17 +169,169 @@ if __name__ == "__main__":
         # Get the latest summary file
         latest_summary = os.path.join('Logs', 'evaluation_summary_latest.json')
         if os.path.exists(latest_summary):
+            # Load the summary data
+            with open(latest_summary, 'r') as f:
+                summary_data = json.load(f)
+            
             # Generate HTML report name with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             report_name = f"evaluation_report_{timestamp}.html"
             report_path = os.path.join('Logs', report_name)
             
-            # Copy template and update with results
+            # Read template and update with results
             with open('evaluation_report_template.html', 'r') as template_file:
                 template = template_file.read()
                 
+            # Convert summary data to JavaScript
+            summary_js = f"""
+                <script>
+                    // Evaluation data
+                    const evaluationData = {json.dumps(summary_data, indent=2)};
+                    
+                    document.addEventListener('DOMContentLoaded', function() {{
+                        // Update timestamp
+                        document.getElementById('timestamp').textContent = evaluationData.readable_timestamp;
+
+                        // Update summary metrics
+                        document.getElementById('total-configs').textContent = evaluationData.results.length;
+                        document.getElementById('total-queries').textContent = evaluationData.query_stats.total_queries;
+                        
+                        // Update complexity breakdown
+                        const complexityHtml = Object.entries(evaluationData.query_stats.by_complexity)
+                            .map(([complexity, count]) => `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">${{complexity}}:</span>
+                                    <span class="font-medium">${{count}}</span>
+                                </div>
+                            `).join('');
+                        document.getElementById('complexity-breakdown').innerHTML = complexityHtml;
+
+                        // Update best configurations
+                        const bestConfigsHtml = Object.entries(evaluationData.best_configurations)
+                            .map(([category, config]) => `
+                                <div class="border rounded p-4">
+                                    <h4 class="font-semibold mb-2">${{category.charAt(0).toUpperCase() + category.slice(1)}}</h4>
+                                    <div class="text-sm">
+                                        <p>Model: ${{config.embedding_model}}</p>
+                                        <p>Strategy: ${{config.chunking_strategy}}</p>
+                                        <p>Time: ${{config.performance.avg_query_time.toFixed(3)}}s</p>
+                                        <p>Score: ${{config.performance.avg_relevancy_score.toFixed(3)}}</p>
+                                    </div>
+                                </div>
+                            `).join('');
+                        document.getElementById('best-configs').innerHTML = bestConfigsHtml;
+
+                        // Create model comparison chart
+                        const modelData = evaluationData.model_comparisons;
+                        new Chart(document.getElementById('modelChart'), {{
+                            type: 'bar',
+                            data: {{
+                                labels: Object.keys(modelData),
+                                datasets: [
+                                    {{
+                                        label: 'Avg Query Time (s)',
+                                        data: Object.values(modelData).map(d => d.avg_query_time),
+                                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                                        yAxisID: 'y-time'
+                                    }},
+                                    {{
+                                        label: 'Avg Relevancy Score',
+                                        data: Object.values(modelData).map(d => d.avg_relevancy_score),
+                                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                                        yAxisID: 'y-score'
+                                    }}
+                                ]
+                            }},
+                            options: {{
+                                responsive: true,
+                                scales: {{
+                                    'y-time': {{
+                                        type: 'linear',
+                                        position: 'left',
+                                        title: {{
+                                            display: true,
+                                            text: 'Time (seconds)'
+                                        }}
+                                    }},
+                                    'y-score': {{
+                                        type: 'linear',
+                                        position: 'right',
+                                        title: {{
+                                            display: true,
+                                            text: 'Relevancy Score'
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }});
+
+                        // Create strategy comparison chart
+                        const strategyData = evaluationData.strategy_comparisons;
+                        new Chart(document.getElementById('strategyChart'), {{
+                            type: 'bar',
+                            data: {{
+                                labels: Object.keys(strategyData),
+                                datasets: [
+                                    {{
+                                        label: 'Avg Query Time (s)',
+                                        data: Object.values(strategyData).map(d => d.avg_query_time),
+                                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                                        yAxisID: 'y-time'
+                                    }},
+                                    {{
+                                        label: 'Avg Relevancy Score',
+                                        data: Object.values(strategyData).map(d => d.avg_relevancy_score),
+                                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                                        yAxisID: 'y-score'
+                                    }}
+                                ]
+                            }},
+                            options: {{
+                                responsive: true,
+                                scales: {{
+                                    'y-time': {{
+                                        type: 'linear',
+                                        position: 'left',
+                                        title: {{
+                                            display: true,
+                                            text: 'Time (seconds)'
+                                        }}
+                                    }},
+                                    'y-score': {{
+                                        type: 'linear',
+                                        position: 'right',
+                                        title: {{
+                                            display: true,
+                                            text: 'Relevancy Score'
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }});
+
+                        // Populate results table
+                        const resultsHtml = evaluationData.results.map(result => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.embedding_model}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.chunking_strategy}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.min_relevancy_score}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.chunk_size}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.avg_query_time.toFixed(3)}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${{result.avg_relevancy_score.toFixed(3)}}</td>
+                            </tr>
+                        `).join('');
+                        document.getElementById('results-body').innerHTML = resultsHtml;
+                    }});
+                </script>
+            """
+            
+            # Find the closing </body> tag and insert our data before it
+            template_parts = template.split('</body>')
+            populated_template = template_parts[0] + summary_js + '\n</body>' + template_parts[1]
+                
+            # Save the populated template
             with open(report_path, 'w') as report_file:
-                report_file.write(template)
+                report_file.write(populated_template)
             
             print("\nEvaluation Results:")
             print("=" * 50)
