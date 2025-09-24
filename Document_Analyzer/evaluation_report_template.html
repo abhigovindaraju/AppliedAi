@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Analysis Performance Evaluation Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .metric-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .chart-container {
+            margin: 20px 0;
+            height: 400px;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Document Analysis Performance Evaluation Report</h1>
+        <div class="section">
+            <h2>Test Configuration</h2>
+            <div class="metric-card">
+                <p><strong>Date:</strong> <span id="eval-date"></span></p>
+                <p><strong>Total Configurations Tested:</strong> <span id="total-configs"></span></p>
+                <p><strong>Models:</strong> <span id="models-tested"></span></p>
+                <p><strong>Strategies:</strong> <span id="strategies-tested"></span></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Example Queries Used</h2>
+            <table id="queries-table">
+                <thead>
+                    <tr>
+                        <th>Query</th>
+                        <th>Category</th>
+                        <th>Complexity</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Best Configurations</h2>
+            <div id="best-configs"></div>
+        </div>
+
+        <div class="section">
+            <h2>Performance Comparison</h2>
+            <div class="chart-container" id="performance-chart"></div>
+        </div>
+
+        <div class="section">
+            <h2>Detailed Results</h2>
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Strategy</th>
+                        <th>Chunk Size</th>
+                        <th>Min Score</th>
+                        <th>Avg Query Time</th>
+                        <th>Avg Relevancy</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Function to load and display the evaluation results
+        async function loadEvaluationResults() {
+            try {
+                const response = await fetch('evaluation_summary_latest.json');
+                const data = await response.json();
+                
+                // Update basic info
+                document.getElementById('eval-date').textContent = new Date(data.timestamp).toLocaleString();
+                document.getElementById('total-configs').textContent = data.results.length;
+                document.getElementById('models-tested').textContent = [...new Set(data.results.map(r => r.embedding_model))].join(', ');
+                document.getElementById('strategies-tested').textContent = [...new Set(data.results.map(r => r.chunking_strategy))].join(', ');
+
+                // Update best configurations
+                const bestConfigsDiv = document.getElementById('best-configs');
+                Object.entries(data.best_configurations).forEach(([category, config]) => {
+                    const configCard = document.createElement('div');
+                    configCard.className = 'metric-card';
+                    configCard.innerHTML = `
+                        <h3>Best ${category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+                        <p>Model: ${config.embedding_model}</p>
+                        <p>Strategy: ${config.chunking_strategy}</p>
+                        <p>Query Time: ${config.performance.avg_query_time.toFixed(3)}s</p>
+                        <p>Relevancy: ${config.performance.avg_relevancy_score.toFixed(3)}</p>
+                    `;
+                    bestConfigsDiv.appendChild(configCard);
+                });
+
+                // Create performance comparison chart
+                const modelData = Object.entries(data.model_comparisons).map(([model, metrics]) => ({
+                    model,
+                    queryTime: metrics.avg_query_time,
+                    relevancy: metrics.avg_relevancy_score
+                }));
+
+                const trace1 = {
+                    x: modelData.map(d => d.model),
+                    y: modelData.map(d => d.queryTime),
+                    name: 'Avg Query Time',
+                    type: 'bar'
+                };
+
+                const trace2 = {
+                    x: modelData.map(d => d.model),
+                    y: modelData.map(d => d.relevancy),
+                    name: 'Avg Relevancy',
+                    type: 'bar'
+                };
+
+                const layout = {
+                    title: 'Model Performance Comparison',
+                    barmode: 'group'
+                };
+
+                Plotly.newPlot('performance-chart', [trace1, trace2], layout);
+
+                // Populate results table
+                const tbody = document.getElementById('results-table').getElementsByTagName('tbody')[0];
+                data.results.forEach(result => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = result.embedding_model;
+                    row.insertCell(1).textContent = result.chunking_strategy;
+                    row.insertCell(2).textContent = result.chunk_size;
+                    row.insertCell(3).textContent = result.min_relevancy_score;
+                    row.insertCell(4).textContent = result.avg_query_time.toFixed(3);
+                    row.insertCell(5).textContent = result.avg_relevancy_score.toFixed(3);
+                });
+
+            } catch (error) {
+                console.error('Error loading evaluation results:', error);
+            }
+        }
+
+        // Load results when the page loads
+        window.addEventListener('load', loadEvaluationResults);
+    </script>
+</body>
+</html>
