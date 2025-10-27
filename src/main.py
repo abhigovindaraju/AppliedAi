@@ -62,5 +62,9 @@ def query(question: str):
     print("[bold green]Result:[/bold green]")
     print(result)
 
+
+
+
+
 if __name__ == "__main__":
     app()
