@@ -1,6 +1,7 @@
 
 
 from sql_connector import SQLConnector
+import pandas as pd
 
 
 
@@ -9,12 +10,11 @@ def get_table_schema(tablename: str) -> TableSchema:
     """Tool that returns the table schema Given a table name"""
     try:
         
-        SQLConnector.execute_query("SELECT sql FROM sqlite_master WHERE type='table' AND name=?;", (tablename,))
-        schema_sql = cursor.fetchone()
-        if schema_sql:
-            return schema_sql[0]
+        data = SQLConnector.execute_query("SELECT sql FROM sqlite_master WHERE type='table' AND name=?;", (tablename,))
+        if data:
+            return data.iloc[0]
         else:
-            return None
+            return None 
     except sqlite3.Error as e:
         print(f"SQLite error: {e}")
         return None
