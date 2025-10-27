@@ -6,10 +6,6 @@ from langchain_google_genai import GoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.agents import AgentExecutor, Tool
-from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
-from langchain.sql_database import SQLDatabase
-from langchain.agents.format_scratchpad import format_log_to_str
-from langchain.agents.output_parsers import ReActSingleInputOutputParser
 from langchain.tools import BaseTool
 from rich import print
 import typer
