@@ -23,11 +23,14 @@ from langgraph.graph import END, StateGraph
 from pprint import pprint
 
 import sqlite3
+import pandas as pd
 
 class SQLConnector:
-    def __init__(db: str):
+    def __init__(self, db: str):
         try:
             self.conn = sqlite3.connect(db)
         except sqlite3.OperationalError as e:
             print("Failed to open database:", e)
-    def execute_query(sql: str):
+    def execute_query(self, sql: str):
+        return pd.read_sql_query(sql=sql, con=self.conn, chunksize=5)
+        
