@@ -1,33 +1,41 @@
 import os
 from typing import List, TypedDict
-
-os.environ['GRPC_VERBOSITY'] = 'NONE'
-
-# Qdrant for RAG vector DB
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
-
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
-from setup_env import setup_env
-from langchain_community.document_loaders import PyPDFLoader
-
-from langchain_core.documents import Document
-from uuid import uuid4
-
-from langgraph.graph import END, StateGraph
 from pprint import pprint
 
 import sqlite3
 
 class SQLConnector:
-    def __init__(db: str):
+    def __init__(self, db: str):
         try:
             self.conn = sqlite3.connect(db)
         except sqlite3.OperationalError as e:
             print("Failed to open database:", e)
-    def execute_query(sql: str):
+    def get_tables(self) -> dict:
+        """Retrieve table names and their columns from the SQLite database."""
+        db_schema = {}
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            
+            for table_name_tuple in tables:
+                table_name = table_name_tuple[0]
+                cursor.execute(f"PRAGMA table_info({table_name});")
+                columns_info = cursor.fetchall()
+                columns = [col[1] for col in columns_info]
+                db_schema[table_name] = columns
+        except sqlite3.Error as e:
+            print("An error occurred while retrieving the database schema:", e)
+
+        return db_schema
+
+    def execute_query(self, sql: str):
+        """Execute a SQL query on the database."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(sql)
+            self.conn.commit()
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            print("An error occurred while executing the query:", e)
+            return None
