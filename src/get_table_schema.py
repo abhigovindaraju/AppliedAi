@@ -7,7 +7,7 @@ import pandas as pd
 
 @tool
 def get_table_schema(tablename: str) -> TableSchema:
-    """Tool that returns the table schema Given a table name"""
+    """Tool that returns the table schema Given a table name in pandas data frame format"""
     try:
         
         data = SQLConnector.execute_query("SELECT sql FROM sqlite_master WHERE type='table' AND name=?;", (tablename,))
