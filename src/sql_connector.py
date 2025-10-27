@@ -3,6 +3,7 @@ from typing import List, TypedDict
 from pprint import pprint
 
 import sqlite3
+import pandas as pd
 
 class SQLConnector:
     def __init__(self, db: str):
@@ -30,12 +31,5 @@ class SQLConnector:
         return db_schema
 
     def execute_query(self, sql: str):
-        """Execute a SQL query on the database."""
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(sql)
-            self.conn.commit()
-            return cursor.fetchall()
-        except sqlite3.Error as e:
-            print("An error occurred while executing the query:", e)
-            return None
+        """Execute a SQL query on the database using pandas."""
+        return pd.read_sql_query(sql=sql, con=self.conn, chunksize=5)
