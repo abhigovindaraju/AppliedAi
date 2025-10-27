@@ -11,6 +11,7 @@ class SQLConnector:
             self.conn = sqlite3.connect(db)
         except sqlite3.OperationalError as e:
             print("Failed to open database:", e)
+    
     def get_tables(self) -> dict:
         """Retrieve table names and their columns from the SQLite database."""
         db_schema = {}
@@ -30,6 +31,6 @@ class SQLConnector:
 
         return db_schema
 
-    def execute_query(self, sql: str):
+    def execute_query(self, sql: str) -> pd.DataFrame:
         """Execute a SQL query on the database using pandas."""
         return pd.read_sql_query(sql=sql, con=self.conn, chunksize=5)
